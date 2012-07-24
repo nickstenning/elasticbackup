@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'elasticbackup',
-    version = '0.0.1',
+    version = '0.0.2',
     packages = find_packages(),
 
     # metadata for upload to PyPI
@@ -19,8 +19,8 @@ setup(
 
     entry_points = {
         'console_scripts': [
-            'elasticbackup = elasticbackup:main',
-            'elasticrestore = elasticrestore:main'
+            'elasticbackup = elasticbackup.backup:main',
+            'elasticrestore = elasticbackup.restore:main'
         ]
     }
 )
