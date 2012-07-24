@@ -1,15 +1,15 @@
 from setuptools import setup, find_packages
 
 setup(
-    name = 'esbackup',
+    name = 'elasticbackup',
     version = '0.0.1',
     packages = find_packages(),
 
     # metadata for upload to PyPI
     author = 'Nick Stenning',
     author_email = 'nick@whiteink.com',
-    url = 'https://github.com/nickstenning/esbackup',
-    description = 'esbackup: tools to backup and restore ElasticSearch indices',
+    url = 'https://github.com/nickstenning/elasticbackup',
+    description = 'elasticbackup: tools to backup and restore ElasticSearch indices',
     license = 'MIT',
     keywords = 'sysadmin elasticsearch backup restore',
 
@@ -19,8 +19,8 @@ setup(
 
     entry_points = {
         'console_scripts': [
-            'esbackup = esbackup:main',
-            'esrestore = esrestore:main'
+            'elasticbackup = elasticbackup:main',
+            'elasticrestore = elasticrestore:main'
         ]
     }
 )
