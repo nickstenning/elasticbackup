@@ -60,7 +60,6 @@ def document_batches(fp):
     for line in fp:
         obj = json.loads(line)
         src = obj.pop('_source')
-        print(obj['_id'])
         batch.append(json.dumps({"create": obj}))
         batch.append(json.dumps(src))
         i += 1
