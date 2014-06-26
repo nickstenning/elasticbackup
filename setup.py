@@ -10,7 +10,7 @@ if sys.version_info[:2] < (2, 7):
 
 setup(
     name='elasticbackup',
-    version='0.3.0',
+    version='0.4.0',
     packages=find_packages(),
 
     # metadata for upload to PyPI
