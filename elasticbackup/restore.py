@@ -1,59 +1,61 @@
 #!/usr/bin/env python
 
-"""
-Usage: esrestore <elasticsearch host> <index name> <mapping.json> <documents.json>
-
-  e.g. esrestore localhost:9200 posts posts_mapping_backup.json posts_docs_backup.json
-"""
-
 from __future__ import print_function
 
-import datetime
+import argparse
+import logging
 import json
-import os
-import sys
-import time
 
-import requests
+import elasticsearch
+
+logging.basicConfig(format='%(asctime)s [%(name)s] [%(levelname)s] '
+                           '%(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+
+log_levels = [logging.WARN, logging.INFO, logging.DEBUG]
+log = logging.getLogger('elasticbackup')
+log_es = logging.getLogger('elasticsearch')
+
+parser = argparse.ArgumentParser(
+    'elasticrestore',
+    description='Restore data and mappings to an ElasticSearch index')
+parser.add_argument('host',
+                    help='elasticsearch host')
+parser.add_argument('index',
+                    help='elasticsearch index name')
+parser.add_argument('-m', '--mappings-file',
+                    help='mappings output filename',
+                    required=True)
+parser.add_argument('-d', '--documents-file',
+                    help='documents output filename',
+                    required=True)
+parser.add_argument('-b', '--batch-size',
+                    help='document upload batch size',
+                    type=int,
+                    default=1000)
+parser.add_argument('-v', '--verbose',
+                    help='increase output verbosity',
+                    action='count',
+                    default=0)
+parser.add_argument('-u', '--user',
+                    help='HTTP auth (in format user:pass)')
 
 
-BATCH_SIZE = 1000
-REQUESTS_CONF = {'verbose': sys.stderr} if os.environ.get('DEBUG') is not None else {}
-
-
-def usage():
-    print(__doc__.strip(), file=sys.stderr)
-
-
-def create_index(host, index):
-    requests.put("%s/%s" % (host, index), config=REQUESTS_CONF)
-
-
-def create_mappings(host, index, f):
+def create_index(es, index, f):
     mappings = json.load(f)
-    for k, v in mappings.iteritems():
-        data = json.dumps(v)
-        r = requests.put("%s/%s/%s/_mapping" % (host, index, k),
-                         data=data,
-                         config=REQUESTS_CONF)
-        r.raise_for_status()
+    es.indices.create(index=index, body=mappings)
 
 
-def create_documents(host, index, f):
-
-    def _create_batch(b):
-        data = '\n'.join(b)
-        r = requests.post("%s/%s/_bulk" % (host, index), data=data, config=REQUESTS_CONF)
-        r.raise_for_status()
-
+def create_documents(es, index, f, batch_size=1000):
     total = 0
 
-    for size, batch in document_batches(f):
-        _create_batch(batch)
+    for size, batch in document_batches(f, batch_size):
+        es.bulk(index=index, body=batch)
         total += size
-        print("  uploaded %s (total: %s)" % (size, total), file=sys.stderr)
+        log.info("uploaded %s (total: %s)", size, total)
 
-def document_batches(fp):
+
+def document_batches(fp, batch_size):
     i = 0
     batch = []
 
@@ -64,7 +66,7 @@ def document_batches(fp):
         batch.append(json.dumps(src))
         i += 1
 
-        if i >= BATCH_SIZE:
+        if i >= batch_size:
             yield i, batch
             i = 0
             batch = []
@@ -74,22 +76,22 @@ def document_batches(fp):
 
 
 def main():
-    try:
-        _, host, index, mappings_filename, documents_filename = sys.argv
-    except ValueError:
-        usage()
-        sys.exit(1)
+    args = parser.parse_args()
 
-    if not host.startswith('http://'):
-        host = 'http://' + host
+    verbose = min(args.verbose, 2)
+    log.setLevel(log_levels[verbose])
+    log_es.setLevel(log_levels[verbose])
 
-    create_index(host, index)
+    conn_kwargs = {}
+    if args.user:
+        conn_kwargs['http_auth'] = args.user
+    es = elasticsearch.Elasticsearch([args.host], **conn_kwargs)
 
-    with open(mappings_filename) as f:
-        create_mappings(host, index, f)
+    with open(args.mappings_file) as f:
+        create_index(es, args.index, f)
 
-    with open(documents_filename) as f:
-        create_documents(host, index, f)
+    with open(args.documents_file) as f:
+        create_documents(es, args.index, f, batch_size=args.batch_size)
 
 if __name__ == '__main__':
     main()
