@@ -43,3 +43,6 @@ license
 
 elasticbackup is released under the terms of the MIT license, a copy of which
 can be found in this distribution, in the LICENSE file.
+
+[1]: http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-request-scroll.html
+[2]: http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html
